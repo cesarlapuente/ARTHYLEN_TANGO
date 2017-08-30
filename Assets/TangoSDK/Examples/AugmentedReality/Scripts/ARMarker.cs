@@ -59,7 +59,7 @@ public class ARMarker : MonoBehaviour
     {
         // The animation should be started in Awake and not Start so that it plays on its first frame.
         m_anim = GetComponent<Animation>();
-        m_anim.Play("ARMarkerShow", PlayMode.StopAll);
+		m_anim.Play("Show", PlayMode.StopAll);
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class ARMarker : MonoBehaviour
     /// </summary>
     private void Hide()
     {
-        m_anim.Play("ARMarkerHide", PlayMode.StopAll);
+		m_anim.Play("Hide", PlayMode.StopAll);
     }
 
     /// <summary>
