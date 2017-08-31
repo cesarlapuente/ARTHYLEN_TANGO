@@ -44,6 +44,17 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 
 
 	/// <summary>
+	/// The reference of the TangoPoseController object.
+	/// 
+	/// TangoPoseController listens to pose updates and applies the correct pose to itself and its built-in camera.
+	/// </summary>
+	public TangoPoseController m_poseController;
+
+
+	private string m_areaDescriptionUUID;
+
+
+	/// <summary>
 	/// Unity Start function.
 	/// 
 	/// This function is responsible for connecting callbacks, set up TangoApplication and initialize the data list.
@@ -83,6 +94,26 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	{
 		m_panelMainMenu.SetActive(false);
 		m_panelPlaceMenuSide.SetActive(true);
+	}
+
+
+	public void StartScan()
+	{
+		m_panelMainMenu.SetActive(false);
+
+		// If there is already one ADF we delete it.
+		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+		{
+			// Load up an existing Area Description.
+			AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
+			areaDescription.Delete();
+		}
+		m_areaDescriptionUUID = null;
+
+		m_tangoApplication.m_areaDescriptionLearningMode = true;
+		m_tangoApplication.Startup(null);
+
+		m_poseController.gameObject.SetActive(true);
 	}
 
 
@@ -126,7 +157,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	{
 		if (permissionsGranted)
 		{
-			if (TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME) == null)
+			m_areaDescriptionUUID = TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME);
+			if (string.IsNullOrEmpty(m_areaDescriptionUUID))
 			{
 				// m_buttonPlace.interactable = false;
 				m_buttonSee.interactable = false;
