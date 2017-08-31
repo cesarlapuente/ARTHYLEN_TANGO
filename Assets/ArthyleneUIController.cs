@@ -1,16 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Tango;
 
 public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle 
 {
+	
+	private const string AREA_DESCRIPTION_FILE_NAME = "ADF_arthylene_produce_department";
+
+
 	/// <summary>
 	/// Main menu panel game object.
 	/// 
 	/// The panel will be disabled when any options starts.
 	/// </summary>
 	public GameObject m_panelMainMenu;
+
+	public Button m_buttonPlace;
+	public Button m_buttonSee;
+
 
 	/// <summary>
 	/// Place menu (side) panel game object.
@@ -117,7 +126,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	{
 		if (permissionsGranted)
 		{
-			
+			if (TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME) == null)
+			{
+				// m_buttonPlace.interactable = false;
+				m_buttonSee.interactable = false;
+			}
 		}
 		else
 		{
