@@ -18,17 +18,20 @@ public class ArthyleneUIController : MonoBehaviour
 	/// </summary>
 	public GameObject m_panelPlaceMenuSide;
 
-	private Animator m_animPlaceMenuSlide;
+	/// <summary>
+	/// PlaceMenuSide animator component.
+	/// 
+	/// The animator will start animations SlideIn and SlideOut.
+	/// </summary>
+	public Animator m_animPlaceMenuSide;
 	private bool isPlaceMenuOpen;
 
 
 	// Use this for initialization
 	void Start () 
 	{
+		// The PlaceMenu start closed.
 		isPlaceMenuOpen = false;
-
-		// Get the animator component from the PanelPlaceMenuSide
-		m_animPlaceMenuSlide = m_panelPlaceMenuSide.GetComponent<Animator>();
 	}
 
 	
@@ -68,13 +71,13 @@ public class ArthyleneUIController : MonoBehaviour
 	private void PlaceMenuSlideIn()
 	{
 		// We have to enabled it, because it is at first disabled to avoid auto start
-		m_animPlaceMenuSlide.enabled = true;
-		m_animPlaceMenuSlide.Play("PlaceMenuSlideIn");
+		m_animPlaceMenuSide.enabled = true;
+		m_animPlaceMenuSide.Play("PlaceMenuSlideIn");
 	}
 
 
 	private void PlaceMenuSlideOut()
 	{
-		m_animPlaceMenuSlide.Play("PlaceMenuSlideOut");
+		m_animPlaceMenuSide.Play("PlaceMenuSlideOut");
 	}
 }
