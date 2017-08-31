@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Tango;
 
-public class ArthyleneUIController : MonoBehaviour 
+public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle 
 {
 	/// <summary>
 	/// Main menu panel game object.
@@ -27,11 +28,37 @@ public class ArthyleneUIController : MonoBehaviour
 	private bool isPlaceMenuOpen;
 
 
-	// Use this for initialization
+	/// <summary>
+	/// A reference to TangoApplication instance.
+	/// </summary>
+	private TangoApplication m_tangoApplication;
+
+
+	/// <summary>
+	/// Unity Start function.
+	/// 
+	/// This function is responsible for connecting callbacks, set up TangoApplication and initialize the data list.
+	/// </summary>
 	void Start () 
 	{
 		// The PlaceMenu start closed.
 		isPlaceMenuOpen = false;
+
+		// Tango Initialization
+		m_tangoApplication = FindObjectOfType<TangoApplication>();
+
+		if (m_tangoApplication != null)
+		{
+			m_tangoApplication.Register(this);
+			if (AndroidHelper.IsTangoCorePresent())
+			{
+				m_tangoApplication.RequestPermissions();
+			}
+		}
+		else
+		{
+			Debug.Log("No Tango Manager found in scene.");
+		}
 	}
 
 	
@@ -79,5 +106,41 @@ public class ArthyleneUIController : MonoBehaviour
 	private void PlaceMenuSlideOut()
 	{
 		m_animPlaceMenuSide.Play("PlaceMenuSlideOut");
+	}
+
+
+	/// <summary>
+	/// Internal callback when a permissions event happens.
+	/// </summary>
+	/// <param name="permissionsGranted">If set to <c>true</c> permissions granted.</param>
+	public void OnTangoPermissions(bool permissionsGranted)
+	{
+		if (permissionsGranted)
+		{
+			
+		}
+		else
+		{
+			AndroidHelper.ShowAndroidToastMessage("Motion Tracking and Area Learning Permissions Needed");
+
+			// This is a fix for a lifecycle issue where calling
+			// Application.Quit() here, and restarting the application
+			// immediately results in a deadlocked app.
+			AndroidHelper.AndroidQuit();
+		}
+	}
+
+	/// <summary>
+	/// This is called when successfully connected to the Tango service.
+	/// </summary>
+	public void OnTangoServiceConnected()
+	{
+	}
+
+	/// <summary>
+	/// This is called when disconnected from the Tango service.
+	/// </summary>
+	public void OnTangoServiceDisconnected()
+	{
 	}
 }
