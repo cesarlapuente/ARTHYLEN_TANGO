@@ -121,6 +121,16 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		m_panelMainMenu.SetActive(false);
 		m_panelPlaceMenuSide.SetActive(true);
+
+		// Check that Area Description has been found
+		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+		{
+			m_areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
+			m_tangoApplication.m_areaDescriptionLearningMode = false;
+
+			m_tangoApplication.Startup(m_areaDescription);
+			m_poseController.gameObject.SetActive(true);
+		}
 	}
 
 
