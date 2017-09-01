@@ -12,6 +12,18 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
+	/// The point cloud object in the scene.
+	/// </summary>
+	public TangoPointCloud m_pointCloud;
+
+
+	/// <summary>
+	/// Prefabs of different produces (fruit & vegetable).
+	/// </summary>
+	public GameObject[] m_producePrefabs;
+
+
+	/// <summary>
 	/// Main menu panel game object.
 	/// 
 	/// The panel will be disabled when any options starts.
@@ -85,6 +97,24 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	private bool m_initialized = false;
 
 
+	/// <summary>
+	/// Reference to the newly placed produce.
+	/// </summary>
+	private GameObject newProduceObject = null;
+
+
+	/// <summary>
+	/// List of produces placed in the scene.
+	/// </summary>
+	private List<GameObject> m_produceList = new List<GameObject>();
+
+
+	/// <summary>
+	/// Current produce type.
+	/// </summary>
+	private int m_currentProduceType = 0;
+
+
 	private string m_areaDescriptionUUID;
 
 	private Thread m_saveThread;
@@ -132,6 +162,21 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		if (!m_initialized)
 		{
 			return;
+		}
+
+		if (Input.touchCount == 1)
+		{
+			Touch t = Input.GetTouch(0);
+			Vector2 guiPosition = new Vector2(t.position.x, Screen.height - t.position.y);
+			Camera cam = Camera.main;
+			RaycastHit hitInfo;
+
+			if (t.phase != TouchPhase.Began)
+			{
+				return;
+			}
+
+			StartCoroutine(_WaitForDepthAndFindPlane(t.position));
 		}
 	}
 
@@ -233,6 +278,71 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	}
 
 
+	/// <summary>
+	/// Wait for the next depth update, then find the plane at the touch position.
+	/// </summary>
+	/// <returns>Coroutine IEnumerator.</returns>
+	/// <param name="touchPosition">Touch position to find a plane at.</param>
+	private IEnumerator _WaitForDepthAndFindPlane(Vector2 touchPosition)
+	{
+		m_findPlaneWaitingForDepth = true;
+
+		// Turn on the camera and wait for a single depth update.
+		m_tangoApplication.SetDepthCameraRate(TangoEnums.TangoDepthCameraRate.MAXIMUM);
+		while (m_findPlaneWaitingForDepth)
+		{
+			yield return null;
+		}
+
+		m_tangoApplication.SetDepthCameraRate(TangoEnums.TangoDepthCameraRate.DISABLED);
+
+		// Find the plane.
+		Camera cam = Camera.main;
+		Vector3 planeCenter;
+		Plane plane;
+		if (!m_pointCloud.FindPlane(cam, touchPosition, out planeCenter, out plane))
+		{
+			yield break;
+		}
+
+		// Ensure the location is always facing the camera.  This is like a LookRotation, but for the Y axis.
+		Vector3 up = plane.normal;
+		Vector3 forward;
+		if (Vector3.Angle(plane.normal, cam.transform.forward) < 175)
+		{
+			Vector3 right = Vector3.Cross(up, cam.transform.forward).normalized;
+			forward = Vector3.Cross(right, up).normalized;
+		}
+		else
+		{
+			// Normal is nearly parallel to camera look direction, the cross product would have too much
+			// floating point error in it.
+			forward = Vector3.Cross(up, cam.transform.right);
+		}
+
+
+		// Instantiate produce object.
+		newProduceObject = Instantiate(m_producePrefabs[m_currentProduceType],
+			planeCenter,
+			Quaternion.LookRotation(forward, up)) as GameObject;
+
+		ARProduce produceScript = newProduceObject.GetComponent<ARProduce>();
+
+		produceScript.m_type = m_currentProduceType;
+		produceScript.m_timestamp = (float)m_poseController.LastPoseTimestamp;
+
+		Matrix4x4 uwTDevice = Matrix4x4.TRS(m_poseController.transform.position,
+			m_poseController.transform.rotation,
+			Vector3.one);
+		Matrix4x4 uwTProduce = Matrix4x4.TRS(newProduceObject.transform.position,
+			newProduceObject.transform.rotation,
+			Vector3.one);
+		produceScript.m_deviceTProduce = Matrix4x4.Inverse(uwTDevice) * uwTProduce;
+
+		m_produceList.Add(newProduceObject);
+	}
+
+
 	/*
 	 * Implements
 	 */
@@ -304,7 +414,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	/// 
 	/// In this function, we only listen to the Start-Of-Service with respect to Area-Description frame pair. This pair
 	/// indicates a relocalization or loop closure event happened, base on that, we either start the initialize the
-	/// interaction or do a bundle adjustment for all marker position.
+	/// interaction or do a bundle adjustment for all produce position.
 	/// </summary>
 	/// <param name="poseData">Returned pose data from TangoService.</param>
 	public void OnTangoPoseAvailable(Tango.TangoPoseData poseData)
@@ -319,8 +429,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		//
 		// When learning mode is off, and an Area Description is loaded, this callback indicates a
 		// relocalization event. Relocalization is when the device finds out where it is with respect to the loaded
-		// Area Description. In our case, when the device is relocalized, the markers will be loaded because we
-		// know the relative device location to the markers.
+		// Area Description. In our case, when the device is relocalized, the produces will be loaded because we
+		// know the relative device location to the produce.
 		if (poseData.framePair.baseFrame == 
 			TangoEnums.TangoCoordinateFrameType.TANGO_COORDINATE_FRAME_AREA_DESCRIPTION &&
 			poseData.framePair.targetFrame ==
