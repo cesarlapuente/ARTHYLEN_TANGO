@@ -22,11 +22,20 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 
 
 	/// <summary>
+	/// Scan menu panel game object.
+	/// 
+	/// The panel will be enabled when 'Scan produce department' starts.
+	/// </summary>
+	public GameObject m_panelScanMenu;
+
+
+	/// <summary>
 	/// Place menu (side) panel game object.
 	/// 
 	/// The panel will be enabled when 'Place produce' starts.
 	/// </summary>
 	public GameObject m_panelPlaceMenuSide;
+
 
 	/// <summary>
 	/// PlaceMenuSide animator component.
@@ -100,6 +109,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	public void StartScan()
 	{
 		m_panelMainMenu.SetActive(false);
+		m_panelScanMenu.SetActive(true);
+
 
 		// If there is already one ADF we delete it.
 		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
