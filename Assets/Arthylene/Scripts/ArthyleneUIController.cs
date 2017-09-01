@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Tango;
 
-public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
+public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent, ITangoPose, ITangoDepth
 {
 	
 	private const string AREA_DESCRIPTION_FILE_NAME = "ADF_arthylene_produce_department";
@@ -70,6 +70,21 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	private AreaDescription m_areaDescription;
 
 
+	/// <summary>
+	/// If set, then the depth camera is on and we are waiting for the next depth update.
+	/// </summary>
+	private bool m_findPlaneWaitingForDepth;
+
+
+	/// <summary>
+	/// If the interaction is initialized.
+	/// 
+	/// Note that the initialization is triggered by the relocalization event. We don't want user to place object before
+	/// the device is relocalized.
+	/// </summary>
+	private bool m_initialized = false;
+
+
 	private string m_areaDescriptionUUID;
 
 	private Thread m_saveThread;
@@ -112,6 +127,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			#pragma warning disable 618
 			Application.LoadLevel(Application.loadedLevel);
 			#pragma warning restore 618
+		}
+
+		if (!m_initialized)
+		{
+			return;
 		}
 	}
 
@@ -163,6 +183,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		// Disable interaction before saving by removing PanelScanMenu.
 		m_buttonSaveScan.interactable = false;
+		m_initialized = false;
 
 		// Check if Area Description Learning mode was ON (it should be)
 		if (m_tangoApplication.m_areaDescriptionLearningMode)
@@ -275,5 +296,60 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		{
 			m_textButtonSaveScan.text = "Saving. " + (float.Parse(tangoEvent.event_value) * 100) + "%";
 		}
+	}
+
+
+	/// <summary>
+	/// ITangoPose - OnTangoPoseAvailable event from Tango.
+	/// 
+	/// In this function, we only listen to the Start-Of-Service with respect to Area-Description frame pair. This pair
+	/// indicates a relocalization or loop closure event happened, base on that, we either start the initialize the
+	/// interaction or do a bundle adjustment for all marker position.
+	/// </summary>
+	/// <param name="poseData">Returned pose data from TangoService.</param>
+	public void OnTangoPoseAvailable(Tango.TangoPoseData poseData)
+	{
+		// This frame pair's callback indicates that a loop closure or relocalization has happened. 
+		//
+		// When learning mode is on, this callback indicates the loop closure event. Loop closure will happen when the
+		// system recognizes a pre-visited area, the loop closure operation will correct the previously saved pose 
+		// to achieve more accurate result. (pose can be queried through GetPoseAtTime based on previously saved
+		// timestamp).
+		// Loop closure definition: https://en.wikipedia.org/wiki/Simultaneous_localization_and_mapping#Loop_closure
+		//
+		// When learning mode is off, and an Area Description is loaded, this callback indicates a
+		// relocalization event. Relocalization is when the device finds out where it is with respect to the loaded
+		// Area Description. In our case, when the device is relocalized, the markers will be loaded because we
+		// know the relative device location to the markers.
+		if (poseData.framePair.baseFrame == 
+			TangoEnums.TangoCoordinateFrameType.TANGO_COORDINATE_FRAME_AREA_DESCRIPTION &&
+			poseData.framePair.targetFrame ==
+			TangoEnums.TangoCoordinateFrameType.TANGO_COORDINATE_FRAME_START_OF_SERVICE &&
+			poseData.status_code == TangoEnums.TangoPoseStatusType.TANGO_POSE_VALID)
+		{
+			// When we get the first loop closure/relocalization event, we initialized all the in-game interactions.
+			if (!m_initialized)
+			{
+				m_initialized = true;
+				if (m_areaDescription == null)
+				{
+					Debug.Log("AndroidInGameController.OnTangoPoseAvailable(): m_areaDescription is null");
+					return;
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// ITangoDepth - This is called each time new depth data is available.
+	/// 
+	/// On the Tango tablet, the depth callback occurs at 5 Hz.
+	/// </summary>
+	/// <param name="tangoDepth">Tango depth.</param>
+	public void OnTangoDepthAvailable(TangoUnityDepth tangoDepth)
+	{
+		// Don't handle depth here because the PointCloud may not have been updated yet. Just
+		// tell the coroutine it can continue.
+		m_findPlaneWaitingForDepth = false;
 	}
 }
