@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using Tango;
 
 public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent, ITangoPose, ITangoDepth
@@ -163,6 +164,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		{
 			return;
 		}
+
+
+		if (EventSystem.current.IsPointerOverGameObject(0) || GUIUtility.hotControl != 0)
+		{
+			return;
+		}
+
 
 		if (Input.touchCount == 1)
 		{
