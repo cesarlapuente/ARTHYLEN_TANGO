@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Tango;
 
-public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle 
+public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 {
 	
 	private const string AREA_DESCRIPTION_FILE_NAME = "ADF_arthylene_produce_department";
@@ -28,6 +28,9 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	/// The panel will be enabled when 'Scan produce department' starts.
 	/// </summary>
 	public GameObject m_panelScanMenu;
+
+	public Button m_buttonSaveScan;
+	public Text m_textButtonSaveScan;
 
 
 	/// <summary>
@@ -149,7 +152,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	public void SaveScan()
 	{
 		// Disable interaction before saving by removing PanelScanMenu.
-		m_panelScanMenu.SetActive(false);
+		m_buttonSaveScan.interactable = false;
 
 		// Check if Area Description Learning mode was ON (it should be)
 		if (m_tangoApplication.m_areaDescriptionLearningMode)
@@ -199,8 +202,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	}
 
 
+	/*
+	 * Implements
+	 */
+
+
 	/// <summary>
-	/// Internal callback when a permissions event happens.
+	/// ITangoLifecycle - Internal callback when a permissions event happens.
 	/// </summary>
 	/// <param name="permissionsGranted">If set to <c>true</c> permissions granted.</param>
 	public void OnTangoPermissions(bool permissionsGranted)
@@ -226,16 +234,36 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	}
 
 	/// <summary>
-	/// This is called when successfully connected to the Tango service.
+	/// ITangoLifecycle - This is called when successfully connected to the Tango service.
 	/// </summary>
 	public void OnTangoServiceConnected()
 	{
 	}
 
 	/// <summary>
-	/// This is called when disconnected from the Tango service.
+	/// ITangoLifecycle - This is called when disconnected from the Tango service.
 	/// </summary>
 	public void OnTangoServiceDisconnected()
 	{
+	}
+
+
+	/// <summary>
+	/// ITangoEvent - This is called each time a Tango event happens.
+	/// </summary>
+	/// <param name="tangoEvent">Tango event.</param>
+	public void OnTangoEventAvailableEventHandler(Tango.TangoEvent tangoEvent)
+	{
+		// We will not have the saving progress when the learning mode is off.
+		if (!m_tangoApplication.m_areaDescriptionLearningMode)
+		{
+			return;
+		}
+
+		if (tangoEvent.type == TangoEnums.TangoEventType.TANGO_EVENT_AREA_LEARNING
+			&& tangoEvent.event_key == "AreaDescriptionSaveProgress")
+		{
+			m_textButtonSaveScan.text = "Saving. " + (float.Parse(tangoEvent.event_value) * 100) + "%";
+		}
 	}
 }
