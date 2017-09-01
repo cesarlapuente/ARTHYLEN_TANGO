@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using Tango;
@@ -60,7 +61,15 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	public TangoPoseController m_poseController;
 
 
+	/// <summary>
+	/// The Area Description saved/loaded in the Tango Service.
+	/// </summary>
+	private AreaDescription m_areaDescription;
+
+
 	private string m_areaDescriptionUUID;
+
+	private Thread m_saveThread;
 
 
 	/// <summary>
@@ -94,7 +103,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 	// Update is called once per frame
 	void Update () 
 	{
-		
+		if (m_saveThread != null && m_saveThread.ThreadState != ThreadState.Running)
+		{
+			// After saving the scan, we reload the scene.
+			#pragma warning disable 618
+			Application.LoadLevel(Application.loadedLevel);
+			#pragma warning restore 618
+		}
 	}
 
 
@@ -125,6 +140,30 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle
 		m_tangoApplication.Startup(null);
 
 		m_poseController.gameObject.SetActive(true);
+	}
+
+
+	/// <summary>
+	/// Save the Area Description.
+	/// </summary>
+	public void SaveScan()
+	{
+		// Disable interaction before saving by removing PanelScanMenu.
+		m_panelScanMenu.SetActive(false);
+
+		// Check if Area Description Learning mode was ON (it should be)
+		if (m_tangoApplication.m_areaDescriptionLearningMode)
+		{
+			m_saveThread = new Thread(delegate()
+				{
+					// Start saving process in another thread.
+					m_areaDescription = AreaDescription.SaveCurrent();
+					AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
+					metadata.m_name = AREA_DESCRIPTION_FILE_NAME;
+					m_areaDescription.SaveMetadata(metadata);
+				});
+			m_saveThread.Start();
+		}
 	}
 
 
