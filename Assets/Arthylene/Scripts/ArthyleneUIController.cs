@@ -76,6 +76,10 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	public Animator m_animPlaceMenuSide;
 	private bool isPlaceMenuOpen;
 
+	public Image m_imageButtonToggleMenu;
+	public Sprite m_spriteActionLeft;
+	public Sprite m_spriteActionRight;
+
 
 	/// <summary>
 	/// A reference to TangoApplication instance.
@@ -328,11 +332,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		if (isPlaceMenuOpen) 
 		{
 			PlaceMenuSlideOut();
+			m_imageButtonToggleMenu.sprite = m_spriteActionLeft;
 		}
 		// otherwise we open it.
 		else
 		{
 			PlaceMenuSlideIn();
+			m_imageButtonToggleMenu.sprite = m_spriteActionRight;
 		}
 
 		// change the state of the PlaceMenu
