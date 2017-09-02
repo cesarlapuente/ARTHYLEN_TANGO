@@ -116,6 +116,9 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	private bool m_initialized = false;
 
 
+	private bool m_seeOnly = false;
+
+
 	/// <summary>
 	/// Reference to the newly placed produce.
 	/// </summary>
@@ -195,6 +198,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			return;
 		}
 
+		if (m_seeOnly)
+		{
+			return;
+		}
+
 
 		if (EventSystem.current.IsPointerOverGameObject(0) || GUIUtility.hotControl != 0)
 		{
@@ -251,6 +259,27 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		m_panelMainMenu.SetActive(false);
 		m_panelPlaceMenuSide.SetActive(true);
+
+		// Check that Area Description has been found
+		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+		{
+			m_areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
+			m_tangoApplication.m_areaDescriptionLearningMode = false;
+
+			m_tangoApplication.Startup(m_areaDescription);
+			m_poseController.gameObject.SetActive(true);
+		}
+	}
+
+
+	/// <summary>
+	/// Start the see option.
+	/// Refactorise this method with the other to make only one.
+	/// </summary>
+	public void StartSee()
+	{
+		m_panelMainMenu.SetActive(false);
+		m_seeOnly = true;
 
 		// Check that Area Description has been found
 		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
@@ -521,7 +550,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			m_areaDescriptionUUID = TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME);
 			if (string.IsNullOrEmpty(m_areaDescriptionUUID))
 			{
-				// m_buttonPlace.interactable = false;
+				m_buttonPlace.interactable = false;
 				m_buttonSee.interactable = false;
 			}
 		}
