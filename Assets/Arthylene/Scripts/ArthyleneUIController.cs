@@ -125,6 +125,18 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
+	/// If set, this is the selected produce.
+	/// </summary>
+	private ARProduce m_selectedProduce;
+
+
+	/// <summary>
+	/// If set, this is the rectangle bounding the selected produce.
+	/// </summary>
+	private Rect m_selectedRect;
+
+
+	/// <summary>
 	/// Current produce type.
 	/// </summary>
 	private int m_currentProduceType = 0;
@@ -198,16 +210,34 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				return;
 			}
 
-			StartCoroutine(_WaitForDepthAndFindPlane(t.position));
+			if (m_selectedRect.Contains(guiPosition))
+			{
+				// do nothing, the button will handle it
+			}
+			else if (Physics.Raycast(cam.ScreenPointToRay(t.position), out hitInfo))
+			{
+				// Found a produce, select it (so long as it isn't disappearing)!
+				GameObject tapped = hitInfo.collider.gameObject;
+				if (!tapped.GetComponent<Animation>().isPlaying)
+				{
+					m_selectedProduce = tapped.GetComponent<ARProduce>();
+				}
+			}
+			else
+			{
+				// Place a new point at that location, clear selection
+				m_selectedProduce = null;
+				StartCoroutine(_WaitForDepthAndFindPlane(t.position));
 
-			// Because we may wait a small amount of time, this is a good place to play a small
-			// animation so the user knows that their input was received.
-			RectTransform touchEffectRectTransform = Instantiate(m_prefabTouchEffect) as RectTransform;
-			touchEffectRectTransform.transform.SetParent(m_canvas.transform, false);
-			Vector2 normalizedPosition = t.position;
-			normalizedPosition.x /= Screen.width;
-			normalizedPosition.y /= Screen.height;
-			touchEffectRectTransform.anchorMin = touchEffectRectTransform.anchorMax = normalizedPosition;
+				// Because we may wait a small amount of time, this is a good place to play a small
+				// animation so the user knows that their input was received.
+				RectTransform touchEffectRectTransform = Instantiate(m_prefabTouchEffect) as RectTransform;
+				touchEffectRectTransform.transform.SetParent(m_canvas.transform, false);
+				Vector2 normalizedPosition = t.position;
+				normalizedPosition.x /= Screen.width;
+				normalizedPosition.y /= Screen.height;
+				touchEffectRectTransform.anchorMin = touchEffectRectTransform.anchorMax = normalizedPosition;
+			}
 		}
 	}
 
@@ -386,6 +416,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		produceScript.m_deviceTProduce = Matrix4x4.Inverse(uwTDevice) * uwTProduce;
 
 		m_produceList.Add(newProduceObject);
+
+		m_selectedProduce = null;
 	}
 
 
@@ -416,6 +448,43 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				produce.m_position,
 				produce.m_orientation) as GameObject;
 			m_produceList.Add(temp);
+		}
+	}
+
+
+	/// <summary>
+	/// Unity OnGUI function.
+	///
+	/// Mainly for removing produce.
+	/// </summary>
+	public void OnGUI()
+	{
+		if (m_selectedProduce != null)
+		{
+			Renderer selectedRenderer = m_selectedProduce.GetComponent<Renderer>();
+
+			// GUI's Y is flipped from the mouse's Y
+			Rect screenRect = Utils.worldBoundsToScreen(Camera.main, selectedRenderer.bounds);
+			float yMin = Screen.height - screenRect.yMin;
+			float yMax = Screen.height - screenRect.yMax;
+			screenRect.yMin = Mathf.Min(yMin, yMax);
+			screenRect.yMax = Mathf.Max(yMin, yMax);
+
+			if (GUI.Button(screenRect, "<size=30>Hide</size>"))
+			{
+				m_produceList.Remove(m_selectedProduce.gameObject);
+				m_selectedProduce.SendMessage("Hide");
+				m_selectedProduce = null;
+				m_selectedRect = new Rect();
+			}
+			else
+			{
+				m_selectedRect = screenRect;
+			}
+		}
+		else
+		{
+			m_selectedRect = new Rect();
 		}
 	}
 
