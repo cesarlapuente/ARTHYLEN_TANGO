@@ -235,16 +235,6 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		m_panelMainMenu.SetActive(false);
 		m_panelScanMenu.SetActive(true);
 
-
-		// If there is already one ADF we delete it.
-		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
-		{
-			// Load up an existing Area Description.
-			AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
-			areaDescription.Delete();
-		}
-		m_areaDescriptionUUID = null;
-
 		m_tangoApplication.m_areaDescriptionLearningMode = true;
 		m_tangoApplication.Startup(null);
 
@@ -270,6 +260,18 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 					AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
 					metadata.m_name = AREA_DESCRIPTION_FILE_NAME;
 					m_areaDescription.SaveMetadata(metadata);
+
+					// If there is already one ADF we delete it.
+					if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+					{
+						// Load up an existing Area Description.
+						AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
+						// Delete it.
+						areaDescription.Delete();
+						// Make sure we also delete the previous placed produces (or in this case saving with nothing).
+						m_produceList.Clear(); // (should be already empty when scanning)
+						FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
+					}
 				});
 			m_saveThread.Start();
 		}
@@ -283,7 +285,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		m_initialized = false;
 
-		FirebaseUtils.saveProduceToDisk(m_areaDescription.m_uuid, m_produceList);
+		FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
 		#pragma warning disable 618
 		Application.LoadLevel(Application.loadedLevel);
 		#pragma warning restore 618
@@ -390,10 +392,10 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	/// <summary>
 	/// Load produce list xml from application storage.
 	/// </summary>
-	private void _LoadProduceFromDisk()
+	private void _LoadProduceFromDisk(string fileName)
 	{
 		// Attempt to load the existing produces from storage.
-		string path = Application.persistentDataPath + "/" + m_areaDescription.m_uuid + ".xml";
+		string path = Application.persistentDataPath + "/" + fileName + ".xml";
 
 		var serializer = new XmlSerializer(typeof(List<ProduceData>));
 		var stream = new FileStream(path, FileMode.Open);
@@ -522,7 +524,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 					return;
 				}
 
-				_LoadProduceFromDisk();
+				_LoadProduceFromDisk(AREA_DESCRIPTION_FILE_NAME);
 			}
 		}
 	}
