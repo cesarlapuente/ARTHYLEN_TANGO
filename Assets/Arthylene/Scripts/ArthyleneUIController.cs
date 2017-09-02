@@ -361,6 +361,16 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
+	/// Set the produce type as a integer corresponding to apple, banana...
+	/// </summary>
+	/// <param name="type">Produce type.</param>
+	public void SetCurrentProduceType(int type)
+	{
+		m_currentProduceType = type;
+	}
+
+
+	/// <summary>
 	/// Wait for the next depth update, then find the plane at the touch position.
 	/// </summary>
 	/// <returns>Coroutine IEnumerator.</returns>
