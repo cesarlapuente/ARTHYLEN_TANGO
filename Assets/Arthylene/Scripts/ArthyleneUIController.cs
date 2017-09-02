@@ -476,7 +476,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			screenRect.yMin = Mathf.Min(yMin, yMax);
 			screenRect.yMax = Mathf.Max(yMin, yMax);
 
-			if (GUI.Button(screenRect, "<size=30>Hide</size>"))
+			if (GUI.Button(screenRect, "<size=30>Remove \n" + Utils.RemoveClone(m_selectedProduce.gameObject.name) +"</size>"))
 			{
 				m_produceList.Remove(m_selectedProduce.gameObject);
 				m_selectedProduce.SendMessage("Hide");

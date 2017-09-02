@@ -25,5 +25,14 @@ public class Utils
 		screenBounds.Encapsulate(cam.WorldToScreenPoint(center + new Vector3(-extents.x, -extents.y, -extents.z)));
 		return Rect.MinMaxRect(screenBounds.min.x, screenBounds.min.y, screenBounds.max.x, screenBounds.max.y);
 	}
+
+
+	/// <summary>
+	/// Remove the "(Clone)" from a string.
+	/// </summary>
+	public static string RemoveClone(string s) 
+	{
+		return s.Replace("(Clone)", "");
+	}
 }
 
