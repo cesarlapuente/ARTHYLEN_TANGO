@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
+using System.Xml.Serialization;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -257,7 +259,6 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		// Disable interaction before saving by removing PanelScanMenu.
 		m_buttonSaveScan.interactable = false;
-		m_initialized = false;
 
 		// Check if Area Description Learning mode was ON (it should be)
 		if (m_tangoApplication.m_areaDescriptionLearningMode)
@@ -272,6 +273,20 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				});
 			m_saveThread.Start();
 		}
+	}
+
+
+	/// <summary>
+	/// Save the produce list.
+	/// </summary>
+	public void SavePlace()
+	{
+		m_initialized = false;
+
+		FirebaseUtils.saveProduceToDisk(m_areaDescription.m_uuid, m_produceList);
+		#pragma warning disable 618
+		Application.LoadLevel(Application.loadedLevel);
+		#pragma warning restore 618
 	}
 
 
@@ -369,6 +384,37 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		produceScript.m_deviceTProduce = Matrix4x4.Inverse(uwTDevice) * uwTProduce;
 
 		m_produceList.Add(newProduceObject);
+	}
+
+
+	/// <summary>
+	/// Load produce list xml from application storage.
+	/// </summary>
+	private void _LoadProduceFromDisk()
+	{
+		// Attempt to load the existing produces from storage.
+		string path = Application.persistentDataPath + "/" + m_areaDescription.m_uuid + ".xml";
+
+		var serializer = new XmlSerializer(typeof(List<ProduceData>));
+		var stream = new FileStream(path, FileMode.Open);
+
+		List<ProduceData> xmlDataList = serializer.Deserialize(stream) as List<ProduceData>;
+
+		if (xmlDataList == null)
+		{
+			Debug.Log("AndroidInGameController._LoadProduceFromDisk(): xmlDataList is null");
+			return;
+		}
+
+		m_produceList.Clear();
+		foreach (ProduceData produce in xmlDataList)
+		{
+			// Instantiate all produces' gameobject.
+			GameObject temp = Instantiate(m_producePrefabs[produce.m_type],
+				produce.m_position,
+				produce.m_orientation) as GameObject;
+			m_produceList.Add(temp);
+		}
 	}
 
 
@@ -475,6 +521,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 					Debug.Log("AndroidInGameController.OnTangoPoseAvailable(): m_areaDescription is null");
 					return;
 				}
+
+				_LoadProduceFromDisk();
 			}
 		}
 	}
