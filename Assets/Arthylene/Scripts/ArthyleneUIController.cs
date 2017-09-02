@@ -25,6 +25,18 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
+	/// The touch effect to place on taps.
+	/// </summary>
+	public RectTransform m_prefabTouchEffect;
+
+
+	/// <summary>
+	/// The canvas to place 2D game objects under.
+	/// </summary>
+	public Canvas m_canvas;
+
+
+	/// <summary>
 	/// Main menu panel game object.
 	/// 
 	/// The panel will be disabled when any options starts.
@@ -185,6 +197,15 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			}
 
 			StartCoroutine(_WaitForDepthAndFindPlane(t.position));
+
+			// Because we may wait a small amount of time, this is a good place to play a small
+			// animation so the user knows that their input was received.
+			RectTransform touchEffectRectTransform = Instantiate(m_prefabTouchEffect) as RectTransform;
+			touchEffectRectTransform.transform.SetParent(m_canvas.transform, false);
+			Vector2 normalizedPosition = t.position;
+			normalizedPosition.x /= Screen.width;
+			normalizedPosition.y /= Screen.height;
+			touchEffectRectTransform.anchorMin = touchEffectRectTransform.anchorMax = normalizedPosition;
 		}
 	}
 
