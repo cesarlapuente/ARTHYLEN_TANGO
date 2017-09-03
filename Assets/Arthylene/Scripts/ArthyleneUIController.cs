@@ -193,6 +193,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			#pragma warning restore 618
 		}
 
+		if (Input.GetKey(KeyCode.Escape))
+		{
+			#pragma warning disable 618
+			Application.LoadLevel(Application.loadedLevel);
+			#pragma warning restore 618
+		}
+
 		if (!m_initialized)
 		{
 			return;
@@ -530,6 +537,23 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		else
 		{
 			m_selectedRect = new Rect();
+		}
+	}
+
+
+	/// <summary>
+	/// Application onPause / onResume callback.
+	/// </summary>
+	/// <param name="pauseStatus"><c>true</c> if the application about to pause, otherwise <c>false</c>.</param>
+	public void OnApplicationPause(bool pauseStatus)
+	{
+		if (pauseStatus && m_initialized)
+		{
+			// When application is backgrounded, we reload the level because the Tango Service is disconected. All
+			// learned area and placed produces should be discarded as they are not saved.
+			#pragma warning disable 618
+			Application.LoadLevel(Application.loadedLevel);
+			#pragma warning restore 618
 		}
 	}
 
