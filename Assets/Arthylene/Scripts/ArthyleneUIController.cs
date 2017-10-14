@@ -261,32 +261,18 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	}
 
 
-	// 
-	public void StartPlace()
-	{
-		m_panelMainMenu.SetActive(false);
-		m_panelPlaceMenuSide.SetActive(true);
-
-		// Check that Area Description has been found
-		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
-		{
-			m_areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
-			m_tangoApplication.m_areaDescriptionLearningMode = false;
-
-			m_tangoApplication.Startup(m_areaDescription);
-			m_poseController.gameObject.SetActive(true);
-		}
-	}
-
-
 	/// <summary>
-	/// Start the see option.
-	/// Refactorise this method with the other to make only one.
+	/// Start the AR interaction option to place or see produces.
 	/// </summary>
-	public void StartSee()
+	public void StartAR(bool seeOnly)
 	{
 		m_panelMainMenu.SetActive(false);
-		m_seeOnly = true;
+
+		if (seeOnly) {
+			m_seeOnly = true;
+		} else {
+			m_panelPlaceMenuSide.SetActive(true);
+		}
 
 		// Check that Area Description has been found
 		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
