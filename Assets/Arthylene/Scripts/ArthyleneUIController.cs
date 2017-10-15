@@ -10,10 +10,6 @@ using Tango;
 
 public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent, ITangoPose, ITangoDepth
 {
-	
-	private const string AREA_DESCRIPTION_FILE_NAME = "ADF_arthylene_produce_department";
-
-
 	/// <summary>
 	/// The point cloud object in the scene.
 	/// </summary>
@@ -66,8 +62,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	/// </summary>
 	public GameObject m_panelMainMenu;
 
-	public Button m_buttonPlace;
-	public Button m_buttonSee;
+
+	/// <summary>
+	/// Area Description Picker panel game object.
+	/// </summary>
+	public GameObject m_panelAreaDescriptionPicker;
 
 
 	/// <summary>
@@ -283,20 +282,29 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
-	/// Start the AR interaction option to place or see produces.
+	/// Shows the area description picker.
 	/// </summary>
-	public void StartAR(bool seeOnly)
+	public void ShowAreaDescriptionPicker(bool seeOnly) 
 	{
 		m_panelMainMenu.SetActive(false);
 
-		if (seeOnly) {
-			m_seeOnly = true;
-		} else {
-			m_panelPlaceMenuSide.SetActive(true);
-		}
+		m_seeOnly = seeOnly;
+		m_panelAreaDescriptionPicker.SetActive(true);
+	}
 
-		// Check that Area Description has been found
-		if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+
+	/// <summary>
+	/// Loads the Area Description.
+	/// </summary>
+	public void LoadAreaDescription()
+	{
+		// Check that Area Description has been found or do nothing
+		if (string.IsNullOrEmpty(m_areaDescriptionUUID))
+		{
+			AndroidHelper.ShowAndroidToastMessage("Please select a scan");
+			return;
+		}
+		else
 		{
 			m_areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
 			m_tangoApplication.m_areaDescriptionLearningMode = false;
@@ -304,9 +312,19 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			m_tangoApplication.Startup(m_areaDescription);
 			m_poseController.gameObject.SetActive(true);
 		}
+
+		m_panelAreaDescriptionPicker.SetActive(false);
+
+		if (!m_seeOnly)
+		{
+			m_panelPlaceMenuSide.SetActive(true);
+		}
 	}
 
 
+	/// <summary>
+	/// Starts the scan.
+	/// </summary>
 	public void StartScan()
 	{
 		m_panelMainMenu.SetActive(false);
@@ -362,18 +380,6 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 						AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
 						metadata.m_name = touchScreenKeyboard.text;
 						m_areaDescription.SaveMetadata(metadata);
-
-						// If there is already one ADF we delete it.
-						if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
-						{
-							// Load up an existing Area Description.
-							AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
-							// Delete it.
-							areaDescription.Delete();
-							// Make sure we also delete the previous placed produces (or in this case saving with nothing).
-							m_produceList.Clear(); // (should be already empty when scanning)
-							FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
-						}
 					});
 				m_saveThread.Start();
 			}
@@ -388,7 +394,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		m_initialized = false;
 
-		FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
+		FirebaseUtils.saveProduceToDisk(m_areaDescriptionUUID, m_produceList);
 		#pragma warning disable 618
 		Application.LoadLevel(Application.loadedLevel);
 		#pragma warning restore 618
@@ -638,7 +644,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		if (value)
 		{
-			//m_curAreaDescriptionUUID = item.m_uuid;
+			m_areaDescriptionUUID = item.m_uuid;
 		}
 	}
 
@@ -656,14 +662,6 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		if (permissionsGranted)
 		{
-			/*
-			m_areaDescriptionUUID = TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME);
-			if (string.IsNullOrEmpty(m_areaDescriptionUUID))
-			{
-				m_buttonPlace.interactable = false;
-				m_buttonSee.interactable = false;
-			}
-			*/
 			_PopulateList();
 		}
 		else
@@ -750,7 +748,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 					return;
 				}
 
-				_LoadProduceFromDisk(AREA_DESCRIPTION_FILE_NAME);
+				_LoadProduceFromDisk(m_areaDescriptionUUID);
 			}
 		}
 	}
