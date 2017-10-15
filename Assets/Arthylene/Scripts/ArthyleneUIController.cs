@@ -303,33 +303,59 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	/// </summary>
 	public void SaveScan()
 	{
-		// Disable interaction before saving by removing PanelScanMenu.
-		m_buttonSaveScan.interactable = false;
+		StartCoroutine(_DoSaveCurrentAreaDescription());
+	}
 
-		// Check if Area Description Learning mode was ON (it should be)
-		if (m_tangoApplication.m_areaDescriptionLearningMode)
+
+	/// <summary>
+	/// Actually do the Area Description save.
+	/// </summary>
+	/// <returns>Coroutine IEnumerator.</returns>
+	private IEnumerator _DoSaveCurrentAreaDescription()
+	{
+		if (TouchScreenKeyboard.visible || m_saveThread != null)
 		{
-			m_saveThread = new Thread(delegate()
-				{
-					// Start saving process in another thread.
-					m_areaDescription = AreaDescription.SaveCurrent();
-					AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
-					metadata.m_name = AREA_DESCRIPTION_FILE_NAME;
-					m_areaDescription.SaveMetadata(metadata);
+			yield break;
+		}
 
-					// If there is already one ADF we delete it.
-					if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+		TouchScreenKeyboard kb = TouchScreenKeyboard.Open("Unnamed");
+		while (!kb.done && !kb.wasCanceled)
+		{
+			yield return null;
+		}
+
+		bool saveConfirmed = kb.done;
+
+		if (saveConfirmed)
+		{
+			// Disable interaction before saving by removing PanelScanMenu.
+			m_buttonSaveScan.interactable = false;
+
+			// Check if Area Description Learning mode was ON (it should be)
+			if (m_tangoApplication.m_areaDescriptionLearningMode)
+			{
+				m_saveThread = new Thread(delegate()
 					{
-						// Load up an existing Area Description.
-						AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
-						// Delete it.
-						areaDescription.Delete();
-						// Make sure we also delete the previous placed produces (or in this case saving with nothing).
-						m_produceList.Clear(); // (should be already empty when scanning)
-						FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
-					}
-				});
-			m_saveThread.Start();
+						// Start saving process in another thread.
+						m_areaDescription = AreaDescription.SaveCurrent();
+						AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
+						metadata.m_name = kb.text;
+						m_areaDescription.SaveMetadata(metadata);
+
+						// If there is already one ADF we delete it.
+						if (!string.IsNullOrEmpty(m_areaDescriptionUUID))
+						{
+							// Load up an existing Area Description.
+							AreaDescription areaDescription = AreaDescription.ForUUID(m_areaDescriptionUUID);
+							// Delete it.
+							areaDescription.Delete();
+							// Make sure we also delete the previous placed produces (or in this case saving with nothing).
+							m_produceList.Clear(); // (should be already empty when scanning)
+							FirebaseUtils.saveProduceToDisk(AREA_DESCRIPTION_FILE_NAME, m_produceList);
+						}
+					});
+				m_saveThread.Start();
+			}
 		}
 	}
 
