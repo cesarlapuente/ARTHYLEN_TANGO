@@ -39,6 +39,27 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 
 	/// <summary>
+	/// The container panel of the Tango space Area Description scrolling list.
+	/// </summary>
+	public RectTransform m_listContentParent;
+
+
+	/// <summary>
+	/// The prefab of a standard button in the scrolling list.
+	/// </summary>
+	public GameObject m_listElement;
+
+
+	/// <summary>
+	/// Toggle group for the Area Description list.
+	/// 
+	/// You can only toggle one Area Description at a time. After we get the list of Area Description from Tango,
+	/// they are all added to this toggle group.
+	/// </summary>
+	public ToggleGroup m_toggleGroup;
+
+
+	/// <summary>
 	/// Main menu panel game object.
 	/// 
 	/// The panel will be disabled when any options starts.
@@ -318,13 +339,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			yield break;
 		}
 
-		TouchScreenKeyboard kb = TouchScreenKeyboard.Open("Unnamed");
-		while (!kb.done && !kb.wasCanceled)
+		TouchScreenKeyboard touchScreenKeyboard = TouchScreenKeyboard.Open("Unnamed");
+		while (!touchScreenKeyboard.done && !touchScreenKeyboard.wasCanceled)
 		{
 			yield return null;
 		}
 
-		bool saveConfirmed = kb.done;
+		bool saveConfirmed = touchScreenKeyboard.done;
 
 		if (saveConfirmed)
 		{
@@ -339,7 +360,7 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 						// Start saving process in another thread.
 						m_areaDescription = AreaDescription.SaveCurrent();
 						AreaDescription.Metadata metadata = m_areaDescription.GetMetadata();
-						metadata.m_name = kb.text;
+						metadata.m_name = touchScreenKeyboard.text;
 						m_areaDescription.SaveMetadata(metadata);
 
 						// If there is already one ADF we delete it.
@@ -570,6 +591,58 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	}
 
 
+	/// <summary>
+	/// Refresh the scrolling list's content for both list.
+	/// 
+	/// This function will query from the Tango API for the Tango space Area Description. Also, when it populates 
+	/// the scrolling list content, it will connect the delegate for each button in the list. The delegate is
+	/// responsible for the actual import/export through the Tango API.
+	/// </summary>
+	private void _PopulateList()
+	{
+		foreach (Transform t in m_listContentParent.transform)
+		{
+			Destroy(t.gameObject);
+		}
+
+		// Update Tango space Area Description list.
+		AreaDescription[] areaDescriptionList = AreaDescription.GetList();
+
+		if (areaDescriptionList == null)
+		{
+			return;
+		}
+
+		foreach (AreaDescription areaDescription in areaDescriptionList)
+		{
+			GameObject newElement = Instantiate(m_listElement) as GameObject;
+			AreaDescriptionListElement listElement = newElement.GetComponent<AreaDescriptionListElement>();
+			listElement.m_toggle.group = m_toggleGroup;
+			listElement.m_areaDescriptionName.text = areaDescription.GetMetadata().m_name;
+			listElement.m_areaDescriptionUUID.text = areaDescription.m_uuid;
+
+			// Ensure the lambda makes a copy of areaDescription.
+			AreaDescription lambdaParam = areaDescription;
+			listElement.m_toggle.onValueChanged.AddListener((value) => _OnToggleChanged(lambdaParam, value));
+			newElement.transform.SetParent(m_listContentParent.transform, false);
+		}
+	}
+
+
+	/// <summary>
+	/// Callback function when toggle button is selected.
+	/// </summary>
+	/// <param name="item">Caller item object.</param>
+	/// <param name="value">Selected value of the toggle button.</param>
+	private void _OnToggleChanged(AreaDescription item, bool value)
+	{
+		if (value)
+		{
+			//m_curAreaDescriptionUUID = item.m_uuid;
+		}
+	}
+
+
 	/*
 	 * Implements
 	 */
@@ -583,12 +656,15 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	{
 		if (permissionsGranted)
 		{
+			/*
 			m_areaDescriptionUUID = TangoUtils.GetAreaDescriptionUUIDbyName(AREA_DESCRIPTION_FILE_NAME);
 			if (string.IsNullOrEmpty(m_areaDescriptionUUID))
 			{
 				m_buttonPlace.interactable = false;
 				m_buttonSee.interactable = false;
 			}
+			*/
+			_PopulateList();
 		}
 		else
 		{
