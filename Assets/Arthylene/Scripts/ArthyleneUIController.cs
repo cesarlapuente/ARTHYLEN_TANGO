@@ -622,10 +622,10 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		foreach (AreaDescription areaDescription in areaDescriptionList)
 		{
 			GameObject newElement = Instantiate(m_listElement) as GameObject;
-			AreaDescriptionListElement listElement = newElement.GetComponent<AreaDescriptionListElement>();
+			AreaDescriptionListElementDate listElement = newElement.GetComponent<AreaDescriptionListElementDate>();
 			listElement.m_toggle.group = m_toggleGroup;
 			listElement.m_areaDescriptionName.text = areaDescription.GetMetadata().m_name;
-			listElement.m_areaDescriptionUUID.text = areaDescription.m_uuid;
+			listElement.m_areaDescriptionDate.text = areaDescription.GetMetadata().m_dateTime.ToString();
 
 			// Ensure the lambda makes a copy of areaDescription.
 			AreaDescription lambdaParam = areaDescription;
