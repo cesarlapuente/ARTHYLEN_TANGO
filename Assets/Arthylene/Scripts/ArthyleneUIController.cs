@@ -174,6 +174,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	private Thread m_saveThread;
 
 
+	public GUIStyle m_GUIstyle_buttonRemove;
+	public GUIStyle m_GUIstyle_buttonValid;
+	public GUIStyle m_GUIstyle_information;
+
+
 	/// <summary>
 	/// Unity Start function.
 	/// 
@@ -561,7 +566,19 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			screenRect.yMin = Mathf.Min(yMin, yMax);
 			screenRect.yMax = Mathf.Max(yMin, yMax);
 
-			if (GUI.Button(screenRect, "<size=30>Remove \n" + Utils.RemoveClone(m_selectedProduce.gameObject.name) +"</size>"))
+			float halfWidth = screenRect.width / 2;
+			float halfHeight = screenRect.height / 2;
+
+			GUI.BeginGroup(screenRect);
+			// All rectangles are now adjusted to the group. (0,0) is the topleft corner of the group.
+			GUI.Box(
+				new Rect (0,0,screenRect.width, halfHeight), 
+				"<size=30>" + Utils.RemoveClone(m_selectedProduce.gameObject.name) + "</size>",
+				m_GUIstyle_information);
+
+			GUI.Button(new Rect(halfWidth, halfHeight, halfWidth, halfHeight), "OK", m_GUIstyle_buttonValid);
+
+			if (GUI.Button(new Rect (0, halfHeight, halfWidth, halfHeight), "X", m_GUIstyle_buttonRemove))
 			{
 				m_produceList.Remove(m_selectedProduce.gameObject);
 				m_selectedProduce.SendMessage("Hide");
@@ -572,6 +589,9 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			{
 				m_selectedRect = screenRect;
 			}
+
+			// End the group we started above.
+			GUI.EndGroup ();
 		}
 		else
 		{
