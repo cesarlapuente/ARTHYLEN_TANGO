@@ -230,12 +230,6 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			return;
 		}
 
-		if (m_seeOnly)
-		{
-			return;
-		}
-
-
 		if (EventSystem.current.IsPointerOverGameObject(0) || GUIUtility.hotControl != 0)
 		{
 			return;
@@ -269,6 +263,10 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			}
 			else
 			{
+				if (m_seeOnly)
+				{
+					return;
+				}
 				// Place a new point at that location, clear selection
 				m_selectedProduce = null;
 				StartCoroutine(_WaitForDepthAndFindPlane(t.position));
@@ -576,9 +574,20 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				"<size=30>" + Utils.RemoveClone(m_selectedProduce.gameObject.name) + "</size>",
 				m_GUIstyle_information);
 
-			GUI.Button(new Rect(halfWidth, halfHeight, halfWidth, halfHeight), "OK", m_GUIstyle_buttonValid);
+			string buttonText;
+			GUIStyle buttonStyle;
+			if (m_seeOnly) 
+			{
+				buttonText = "Ok";
+				buttonStyle = m_GUIstyle_buttonValid;
+			}
+			else 
+			{
+				buttonText = "X";
+				buttonStyle = m_GUIstyle_buttonRemove;
+			}
 
-			if (GUI.Button(new Rect (0, halfHeight, halfWidth, halfHeight), "X", m_GUIstyle_buttonRemove))
+			if (GUI.Button(new Rect (0, halfHeight, screenRect.width, halfHeight), buttonText, buttonStyle))
 			{
 				m_produceList.Remove(m_selectedProduce.gameObject);
 				m_selectedProduce.SendMessage("Hide");
