@@ -179,6 +179,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 	public GUIStyle m_GUIstyle_information;
 
 
+	private int m_totalProduces;
+
+
+	public GameObject m_panelSeeMenuTop;
+	public Text m_textSee;
+
+
 	/// <summary>
 	/// Unity Start function.
 	/// 
@@ -318,7 +325,11 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 
 		m_panelAreaDescriptionPicker.SetActive(false);
 
-		if (!m_seeOnly)
+		if (m_seeOnly)
+		{
+			m_panelSeeMenuTop.SetActive(true);
+		}
+		else
 		{
 			m_panelPlaceMenuSide.SetActive(true);
 		}
@@ -543,6 +554,13 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				produce.m_orientation) as GameObject;
 			m_produceList.Add(temp);
 		}
+
+		m_totalProduces = m_produceList.Count;
+
+		if (m_seeOnly)
+		{
+			refreshValidProduces();
+		}
 	}
 
 
@@ -593,6 +611,9 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 				m_selectedProduce.SendMessage("Hide");
 				m_selectedProduce = null;
 				m_selectedRect = new Rect();
+				m_totalProduces = m_totalProduces - 1;
+				if (m_seeOnly) 
+					refreshValidProduces();
 			}
 			else
 			{
@@ -605,6 +626,16 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 		else
 		{
 			m_selectedRect = new Rect();
+		}
+	}
+
+
+	private void refreshValidProduces()
+	{
+		m_textSee.text = m_totalProduces + " produce(s) to validate";
+		if (m_totalProduces <= 0)
+		{
+			FirebaseUtils.saveProduceQty(m_areaDescriptionUUID, -1);
 		}
 	}
 
@@ -653,7 +684,8 @@ public class ArthyleneUIController : MonoBehaviour, ITangoLifecycle, ITangoEvent
 			GameObject newElement = Instantiate(m_listElement) as GameObject;
 			AreaDescriptionListElementDate listElement = newElement.GetComponent<AreaDescriptionListElementDate>();
 			listElement.m_toggle.group = m_toggleGroup;
-			listElement.m_areaDescriptionName.text = areaDescription.GetMetadata().m_name;
+
+			listElement.m_areaDescriptionName.text = FirebaseUtils.checkValidity(areaDescription.m_uuid) ? areaDescription.GetMetadata().m_name + " - VALIDATE" : areaDescription.GetMetadata().m_name;
 			listElement.m_areaDescriptionDate.text = areaDescription.GetMetadata().m_dateTime.ToString();
 
 			// Ensure the lambda makes a copy of areaDescription.

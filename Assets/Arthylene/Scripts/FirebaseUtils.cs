@@ -33,5 +33,19 @@ public class FirebaseUtils {
 		{
 			serializer.Serialize(stream, xmlDataList);
 		}
+
+		saveProduceQty(fileName, produceList.Count);
+	}
+
+
+	public static void saveProduceQty(string key, int value)
+	{
+		PlayerPrefs.SetInt(key, value);
+	}
+
+
+	public static bool checkValidity(string key)
+	{
+		return PlayerPrefs.GetInt(key, 0).Equals(-1);
 	}
 }
